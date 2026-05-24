@@ -14,6 +14,7 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
+            // headers cannot be applied to a Server Component response — middleware handles them
           } catch {
             // called from Server Component — middleware handles setting
           }

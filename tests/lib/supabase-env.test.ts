@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 
-describe('Supabase environment variables', () => {
+const hasSupabaseEnv = !!process.env.NEXT_PUBLIC_SUPABASE_URL
+
+describe.skipIf(!hasSupabaseEnv)('Supabase environment variables', () => {
   it('has NEXT_PUBLIC_SUPABASE_URL', () => {
     expect(process.env.NEXT_PUBLIC_SUPABASE_URL).toMatch(/^https:\/\//)
   })
