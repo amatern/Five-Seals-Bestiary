@@ -1,38 +1,33 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
+
+function safeRedirectPath(value: string | null): string {
+  if (!value) return '/'
+  // Block protocol-relative URLs (//evil.com) and anything not starting with /
+  if (!value.startsWith('/') || value.startsWith('//')) return '/'
+  return value
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const redirectTo = searchParams.get('redirectTo') ?? '/'
+  const redirectTo = safeRedirectPath(searchParams.get('redirectTo'))
 
   if (code) {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          },
-        },
-      }
-    )
-
+    const supabase = await createClient()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      // Create user profile on first login (upsert is idempotent)
-      await supabase.from('users').upsert({
+      const { error: upsertError } = await supabase.from('users').upsert({
         id: data.user.id,
-        email: data.user.email!,
-        username: data.user.email!.split('@')[0],
+        email: data.user.email ?? '',
+        username: data.user.email?.split('@')[0] ?? data.user.id.slice(0, 8),
       }, { onConflict: 'id', ignoreDuplicates: true })
+
+      if (upsertError) {
+        console.error('[auth/callback] users upsert failed:', upsertError)
+        return NextResponse.redirect(`${origin}/login?error=auth-failed`)
+      }
 
       return NextResponse.redirect(`${origin}${redirectTo}`)
     }
