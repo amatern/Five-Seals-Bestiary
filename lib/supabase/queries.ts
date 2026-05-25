@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Creature, CreatureWithMoves } from '@/lib/types'
+import type { Creature, CreatureWithMoves, Move } from '@/lib/types'
 
 export async function getApprovedCreatures(filters?: {
   type?: string
@@ -46,4 +46,15 @@ export async function getCreatureWithMoves(id: string): Promise<CreatureWithMove
     return null
   }
   return data as CreatureWithMoves
+}
+
+export async function getMoves(): Promise<Move[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('moves')
+    .select('*')
+    .order('type')
+    .order('name')
+  if (error) throw new Error(`getMoves: ${error.message}`)
+  return (data ?? []) as Move[]
 }

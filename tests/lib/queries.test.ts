@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getApprovedCreatures, getCreatureWithMoves } from '@/lib/supabase/queries'
+import { getApprovedCreatures, getCreatureWithMoves, getMoves } from '@/lib/supabase/queries'
 
 describe('query exports', () => {
   it('exports getApprovedCreatures as a function', () => {
@@ -8,5 +8,9 @@ describe('query exports', () => {
 
   it('exports getCreatureWithMoves as a function', () => {
     expect(typeof getCreatureWithMoves).toBe('function')
+  })
+
+  it('exports getMoves as a function', () => {
+    expect(typeof getMoves).toBe('function')
   })
 })
