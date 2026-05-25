@@ -13,6 +13,7 @@ export async function getApprovedCreatures(filters?: {
     .order('name')
 
   if (filters?.type) {
+    // PostgreSQL array contains operator — matches if types array includes the specified type
     query = query.contains('types', [filters.type])
   }
   if (filters?.gate_key) {
@@ -41,5 +42,8 @@ export async function getCreatureWithMoves(id: string): Promise<CreatureWithMove
     .single()
 
   if (error) return null
+  if (!data || !Array.isArray(data.creature_moves)) {
+    return null
+  }
   return data as CreatureWithMoves
 }
