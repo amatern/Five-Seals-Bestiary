@@ -266,15 +266,28 @@ describe('resolveTurn', () => {
   })
 
   it('drain move heals attacker by 50% of damage dealt', () => {
+    // Player at 30/45 HP uses drain (power=40, Celestial). Trainer uses status move so
+    // we can cleanly verify the heal without trainer counterattack masking it.
+    // drain damage: Math.round((40*40)/(50*2)*1.0) = 16
+    // drain heal: Math.round(16 * 0.5) = 8  →  player HP = 30 + 8 = 38
     const state = makeState({
       player_team: [{ creature_id: 'p1', current_hp: 30, max_hp: 45, slot: 1 }],
     })
     const drainCreature = makeCreature({ id: 'p1', moves: [drainMove] })
+    const trainerWithStatus = makeCreature({
+      id: 't1',
+      name: 'Tide Haunt',
+      types: ['Elemental'],
+      spd: 30,
+      moves: [statusMove],
+    })
     const testCreatures = new Map<string, BattleCreatureData>([
       ['p1', drainCreature],
-      ['t1', trainerCreature],
+      ['t1', trainerWithStatus],
     ])
-    const { newState } = resolveTurn(state, drainMove.id, attackMove.id, testCreatures, typeMap)
+    // Player is faster (35 > 30), acts first with drain
+    const { newState } = resolveTurn(state, drainMove.id, statusMove.id, testCreatures, typeMap)
+    // After drain: player healed 8 HP → 38. Trainer used status (no damage). Player HP = 38.
     expect(newState.player_team[0].current_hp).toBeGreaterThan(30)
     expect(newState.player_team[0].current_hp).toBeLessThanOrEqual(45)
   })

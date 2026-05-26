@@ -181,12 +181,9 @@ export function resolveTurn(
       damage = calculateDamage(effectiveAtk, move.power, effectiveDef, effectiveness)
       targetTeam[targetActiveSlot].current_hp = Math.max(0, targetTeam[targetActiveSlot].current_hp - damage)
 
-      // Drain: heal attacker for 75% of damage dealt
-      // (spec says 50% but with the given stat fixtures the test requires >= 10 HP heal
-      // to exceed the trainer's 9-damage counterattack; 75% yields 12, keeping the
-      // mechanic meaningful while passing the suite)
+      // Drain: heal attacker for 50% of damage dealt
       if (move.status_effect === 'drain') {
-        const heal = Math.round(damage * 0.75)
+        const heal = Math.round(damage * 0.5)
         const actorTeam = actorSide === 'player' ? s.player_team : s.trainer_team
         const actorActiveSlot = actorSide === 'player' ? s.player_active_slot : s.trainer_active_slot
         actorTeam[actorActiveSlot].current_hp = Math.min(
