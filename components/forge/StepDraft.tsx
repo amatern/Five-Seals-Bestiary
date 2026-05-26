@@ -33,7 +33,11 @@ export function StepDraft({ draft, moves, onUpdate, onNext, onBack }: StepDraftP
     update('move_ids', ids)
   }
 
-  const canProceed = draft.types.length >= 1 && draft.move_ids.filter(Boolean).length === 4
+  const filledMoveIds = draft.move_ids.filter(Boolean)
+  const canProceed =
+    draft.types.length >= 1 &&
+    filledMoveIds.length === 4 &&
+    new Set(filledMoveIds).size === 4
 
   return (
     <div className="space-y-6">

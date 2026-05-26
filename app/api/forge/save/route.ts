@@ -42,6 +42,10 @@ export async function POST(request: NextRequest) {
   if (!hp || !atk || !def || !spd) {
     return NextResponse.json({ error: 'stats are required' }, { status: 400 })
   }
+
+  function clampStat(n: number): number {
+    return Math.min(80, Math.max(25, Math.round(n)))
+  }
   if (move_ids.length !== 4) {
     return NextResponse.json({ error: 'Exactly 4 moves required' }, { status: 400 })
   }
@@ -53,10 +57,10 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       types,
       flavor_text: flavor_text.trim(),
-      hp,
-      atk,
-      def,
-      spd,
+      hp: clampStat(hp),
+      atk: clampStat(atk),
+      def: clampStat(def),
+      spd: clampStat(spd),
       origin: 'player-designed',
       creator_id: user.id,
       artwork_url: artwork_url ?? null,

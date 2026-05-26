@@ -121,6 +121,11 @@ export async function POST(request: NextRequest) {
     .filter((id): id is string => id !== undefined)
     .slice(0, 4)
 
+  if (move_ids.length < 4) {
+    console.error('[forge/generate] Claude returned unrecognised move names:', input.move_names)
+    return NextResponse.json({ error: 'generation-failed' }, { status: 502 })
+  }
+
   return NextResponse.json({
     name: input.name,
     types: input.types,

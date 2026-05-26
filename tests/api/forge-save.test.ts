@@ -105,14 +105,37 @@ describe('POST /api/forge/save', () => {
   })
 
   it('cleans up creature if creature_moves insert fails', async () => {
+    // Track whether delete was called
+    let deleteCalled = false
+    const supabase = {
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: mockUser } }) },
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === 'creatures') {
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: { id: CREATURE_ID }, error: null })
+              })
+            }),
+            delete: vi.fn().mockImplementation(() => {
+              deleteCalled = true
+              return { eq: vi.fn().mockResolvedValue({ error: null }) }
+            }),
+          }
+        }
+        if (table === 'creature_moves') {
+          return { insert: vi.fn().mockResolvedValue({ error: { message: 'constraint violation' } }) }
+        }
+        return {}
+      }),
+    }
+
     const { createClient } = await import('@/lib/supabase/server')
-    const supabase = makeSupabase({ movesError: { message: 'constraint violation' } })
     vi.mocked(createClient).mockResolvedValue(supabase as any)
 
     const { POST } = await import('@/app/api/forge/save/route')
     const response = await POST(makeRequest(validDraft) as any)
     expect(response.status).toBe(500)
-    // Verify delete was called on the creature (cleanup)
-    expect(supabase.from('creatures').delete).toBeDefined()
+    expect(deleteCalled).toBe(true)
   })
 })

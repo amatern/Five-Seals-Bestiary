@@ -55,8 +55,7 @@ export async function POST(request: NextRequest) {
     const { data: { publicUrl } } = supabase.storage.from('artwork').getPublicUrl(filename)
     return NextResponse.json({ url: publicUrl })
   } catch (err) {
-    console.error('[forge/artwork] Storage upload error — returning temporary OpenAI URL:', err)
-    // Fallback: return the OpenAI URL (expires, but at least the user sees the image)
-    return NextResponse.json({ url: openaiUrl, temporary: true })
+    console.error('[forge/artwork] Storage upload error:', err)
+    return NextResponse.json({ error: 'artwork-storage-failed' }, { status: 502 })
   }
 }
