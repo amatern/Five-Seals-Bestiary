@@ -287,9 +287,9 @@ describe('resolveTurn', () => {
     ])
     // Player is faster (35 > 30), acts first with drain
     const { newState } = resolveTurn(state, drainMove.id, statusMove.id, testCreatures, typeMap)
-    // After drain: player healed 8 HP → 38. Trainer used status (no damage). Player HP = 38.
-    expect(newState.player_team[0].current_hp).toBeGreaterThan(30)
-    expect(newState.player_team[0].current_hp).toBeLessThanOrEqual(45)
+    // drain damage: Math.round((40*40)/(50*2)*1.0) = 16; heal: Math.round(16*0.5) = 8
+    // player: 30 + 8 = 38 HP (trainer used status move, dealt no damage)
+    expect(newState.player_team[0].current_hp).toBe(38)
   })
 
   it('increments turn_number', () => {

@@ -34,6 +34,8 @@ function getEffectiveness(
   defendingTypes: string[],
   typeMap: Map<string, number>,
 ): number {
+  // Game design: only the first type is used for effectiveness calculation.
+  // Multi-type creatures like [Elemental, Aberration] are checked against their primary type only.
   const defending = defendingTypes[0] ?? 'unknown'
   return typeMap.get(`${attackingType}:${defending}`) ?? 1.0
 }

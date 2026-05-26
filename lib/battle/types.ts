@@ -8,7 +8,8 @@ export interface BattleCreature {
 }
 
 export interface ActiveEffect {
-  effect: 'atk_down' | 'def_up' | 'spd_down' | 'drain'
+  // drain is not stored as an ongoing effect — it is resolved immediately as damage+heal
+  effect: 'atk_down' | 'def_up' | 'spd_down'
   turns_remaining: number
 }
 
