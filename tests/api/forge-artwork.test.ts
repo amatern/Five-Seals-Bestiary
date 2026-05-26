@@ -3,25 +3,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // ── Mocks ───────────────────────────────────────────────────────────────────
 
 const mockUser = { id: 'user-1', email: 'test@example.com' }
-const FAKE_OPENAI_URL = 'https://oaidalleapiprodscus.blob.core.windows.net/fake/image.png'
 const FAKE_PUBLIC_URL = 'https://sdutnggfomffbpbnoobf.supabase.co/storage/v1/object/public/artwork/user-1/123.png'
+// Base64 of a 1×1 transparent PNG
+const FAKE_IMAGE_BYTES = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }))
 
-const mockGenerate = vi.fn()
+const mockGenerateImages = vi.fn()
 
-vi.mock('openai', () => ({
-  default: vi.fn().mockImplementation(function() {
-    return { images: { generate: mockGenerate } }
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: vi.fn().mockImplementation(function() {
+    return {
+      models: { generateImages: mockGenerateImages },
+    }
   }),
 }))
-
-// Mock global fetch for the OpenAI image download
-global.fetch = vi.fn().mockResolvedValue({
-  arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-} as any)
 
 function makeAuthenticatedSupabase(uploadError: unknown = null) {
   return {
@@ -54,8 +52,8 @@ describe('POST /api/forge/artwork', () => {
     const { createClient } = await import('@/lib/supabase/server')
     vi.mocked(createClient).mockResolvedValue(makeAuthenticatedSupabase() as any)
 
-    mockGenerate.mockResolvedValue({
-      data: [{ url: FAKE_OPENAI_URL }],
+    mockGenerateImages.mockResolvedValue({
+      generatedImages: [{ image: { imageBytes: FAKE_IMAGE_BYTES } }],
     })
   })
 

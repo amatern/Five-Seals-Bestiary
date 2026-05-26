@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import OpenAI from 'openai'
+import { GoogleGenAI } from '@google/genai'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
@@ -23,32 +23,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'concept is required' }, { status: 400 })
   }
 
-  // Generate with DALL-E 3
-  const openai = new OpenAI()
-  let openaiUrl: string
+  // Generate with Gemini Imagen 3
+  // Image comes back as base64 bytes — no URL expiry concern
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
+  let imageBytes: string
   try {
-    const result = await openai.images.generate({
-      model: 'dall-e-3',
+    const result = await ai.models.generateImages({
+      model: 'imagen-3.0-generate-002',
       prompt: `Dark fantasy bestiary illustration: ${concept.trim()}. Style: medieval manuscript art, muted dark tones, ominous atmosphere, single creature centered on a dark background, highly detailed line work. No text, no labels, no borders.`,
-      n: 1,
-      size: '1024x1024',
-      quality: 'standard',
+      config: { numberOfImages: 1 },
     })
-    openaiUrl = result.data[0].url!
+    const generated = result.generatedImages?.[0]?.image?.imageBytes
+    if (!generated) throw new Error('No image returned')
+    imageBytes = generated
   } catch (err) {
-    console.error('[forge/artwork] OpenAI error:', err)
+    console.error('[forge/artwork] Gemini Imagen error:', err)
     return NextResponse.json({ error: 'generation-failed' }, { status: 502 })
   }
 
-  // Fetch the generated image and upload to Supabase Storage
-  // (OpenAI URLs expire after ~1 hour — store it ourselves)
+  // Decode base64 and upload to Supabase Storage
   try {
-    const imageBuffer = await fetch(openaiUrl).then(r => r.arrayBuffer())
+    const buffer = Buffer.from(imageBytes, 'base64')
     const filename = `${user.id}/${Date.now()}.png`
 
     const { error: uploadError } = await supabase.storage
       .from('artwork')
-      .upload(filename, imageBuffer, { contentType: 'image/png', upsert: false })
+      .upload(filename, buffer, { contentType: 'image/png', upsert: false })
 
     if (uploadError) throw uploadError
 
