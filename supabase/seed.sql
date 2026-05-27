@@ -283,3 +283,66 @@ insert into creature_moves (creature_id, move_id, slot) values
   ('00000000-0000-0000-0000-000000000120','00000000-0000-0000-0000-000000000002',3),
   ('00000000-0000-0000-0000-000000000120','00000000-0000-0000-0000-000000000003',4)
 on conflict do nothing;
+
+-- TRAINERS
+-- IDs: 00000000-0000-0000-0000-000000000201 through 000000000204
+insert into trainers (id, name, description, intro_text, win_text, loss_text, ai_behavior, gate_key) values
+  ('00000000-0000-0000-0000-000000000201',
+   'Thessalmar''s Vessel',
+   'A cultist who has swallowed so much of the Drowned''s power they have become something else.',
+   'You smell of the surface. That will not help you here.',
+   'Something in you refused the tide. It will not refuse forever.',
+   'The depths reclaim what they are owed.',
+   'defensive',
+   'seal-of-water'),
+
+  ('00000000-0000-0000-0000-000000000202',
+   'Herald of the Storm Eater',
+   'One of Silvaclaw''s human heralds. They have eaten lightning and survived. Mostly.',
+   'Silvaclaw does not stop for weather. Neither do I.',
+   'The storm noted you. That is not a compliment.',
+   'The lightning finds another path.',
+   'aggressive',
+   'stormcrest-spire'),
+
+  ('00000000-0000-0000-0000-000000000203',
+   'Vexmire''s Penitent',
+   'A fallen cleric who chose the Dawnsbane over the Radiant One. The vestments are still intact.',
+   'The Radiant One is dead. Her seal is next.',
+   'Your conviction is inconvenient.',
+   'The seal cracks a little further.',
+   'balanced',
+   'radiant-temple'),
+
+  ('00000000-0000-0000-0000-000000000204',
+   'Shadow-sworn Initiate',
+   'A monk of the Umbral Vault who has taken Nyx''s mark. Their shadow moves separately from them now.',
+   'The vault does not open for strangers. But it opens for me.',
+   'Something in the vault stirred. That is unusual.',
+   'The darkness closes behind you.',
+   'balanced',
+   'umbral-vault')
+on conflict (id) do nothing;
+
+-- TRAINER CREATURES
+insert into trainer_creatures (trainer_id, creature_id, slot) values
+  -- Thessalmar's Vessel: Drowned Reliquary, Brackish Wyrmling, Half-dragon Servant
+  ('00000000-0000-0000-0000-000000000201', '00000000-0000-0000-0000-000000000116', 1),
+  ('00000000-0000-0000-0000-000000000201', '00000000-0000-0000-0000-000000000107', 2),
+  ('00000000-0000-0000-0000-000000000201', '00000000-0000-0000-0000-000000000111', 3),
+
+  -- Herald of the Storm Eater: Stormcrest Sentinel, Storm Wyrmling, Dragonclaw
+  ('00000000-0000-0000-0000-000000000202', '00000000-0000-0000-0000-000000000118', 1),
+  ('00000000-0000-0000-0000-000000000202', '00000000-0000-0000-0000-000000000108', 2),
+  ('00000000-0000-0000-0000-000000000202', '00000000-0000-0000-0000-000000000112', 3),
+
+  -- Vexmire's Penitent: Hollow Saint, Ash Wraith, Dragon Fang
+  ('00000000-0000-0000-0000-000000000203', '00000000-0000-0000-0000-000000000117', 1),
+  ('00000000-0000-0000-0000-000000000203', '00000000-0000-0000-0000-000000000115', 2),
+  ('00000000-0000-0000-0000-000000000203', '00000000-0000-0000-0000-000000000113', 3),
+
+  -- Shadow-sworn Initiate: Shadow-touched Monk, Shadowborn Wyrmling, Wyrmspeaker
+  ('00000000-0000-0000-0000-000000000204', '00000000-0000-0000-0000-000000000119', 1),
+  ('00000000-0000-0000-0000-000000000204', '00000000-0000-0000-0000-000000000110', 2),
+  ('00000000-0000-0000-0000-000000000204', '00000000-0000-0000-0000-000000000114', 3)
+on conflict do nothing;
