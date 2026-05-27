@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { selectAiMove, resolveTurn } from '@/lib/battle/engine'
 import { buildChronicle, battleEndChronicle } from '@/lib/battle/templates'
-import type { BattleCreatureData } from '@/lib/battle/types'
+import type { BattleCreatureData, BattleState } from '@/lib/battle/types'
 import type { Move } from '@/lib/types'
 
 interface RouteContext {
@@ -35,7 +35,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: 'Battle is not active' }, { status: 400 })
   }
 
-  const state = battle.battle_state
+  const state = battle.battle_state as BattleState | null
+  if (!state) return NextResponse.json({ error: 'Battle state missing' }, { status: 500 })
   const activePlayerCreatureId = state.player_team[state.player_active_slot].creature_id
   const activeTrainerCreatureId = state.trainer_team[state.trainer_active_slot].creature_id
 
@@ -90,7 +91,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   // AI picks move
-  const trainerCreatureData = creatures.get(activeTrainerCreatureId)!
+  const trainerCreatureData = creatures.get(activeTrainerCreatureId)
+  if (!trainerCreatureData) {
+    return NextResponse.json({ error: 'Trainer active creature not found' }, { status: 500 })
+  }
   const trainer = battle.trainer as any
   const trainerHpContext = state.trainer_team[state.trainer_active_slot]
   const aiMove = selectAiMove(
@@ -146,29 +150,28 @@ export async function POST(request: NextRequest, context: RouteContext) {
     playerCreatureData.name,
   )
 
-  // Insert two battle_turns rows
-  const turnRows = [
-    {
-      battle_id: id,
-      turn_number: state.turn_number,
-      acting_user_id: user.id,
-      creature_id: playerTurn.creature_id,
-      move_id: playerTurn.move_id,
-      damage: playerTurn.damage,
-      effectiveness: playerTurn.effectiveness === 2.0 ? 'strong' : playerTurn.effectiveness === 0.5 ? 'weak' : 'neutral',
-      chronicle_text: playerTurn.chronicle_text,
-    },
-    {
-      battle_id: id,
-      turn_number: state.turn_number,
-      acting_user_id: null,  // AI turn
-      creature_id: aiTurn.creature_id,
-      move_id: aiTurn.move_id,
-      damage: aiTurn.damage,
-      effectiveness: aiTurn.effectiveness === 2.0 ? 'strong' : aiTurn.effectiveness === 0.5 ? 'weak' : 'neutral',
-      chronicle_text: aiTurn.chronicle_text,
-    },
-  ]
+  // Insert battle_turns rows (skip empty-chronicle rows when battle ended mid-turn)
+  const playerTurnRow = {
+    battle_id: id,
+    turn_number: state.turn_number,
+    acting_user_id: user.id,
+    creature_id: playerTurn.creature_id,
+    move_id: playerTurn.move_id,
+    damage: playerTurn.damage,
+    effectiveness: playerTurn.effectiveness === 2.0 ? 'strong' : playerTurn.effectiveness === 0.5 ? 'weak' : 'neutral',
+    chronicle_text: playerTurn.chronicle_text,
+  }
+  const aiTurnRow = {
+    battle_id: id,
+    turn_number: state.turn_number,
+    acting_user_id: null,  // AI turn
+    creature_id: aiTurn.creature_id,
+    move_id: aiTurn.move_id,
+    damage: aiTurn.damage,
+    effectiveness: aiTurn.effectiveness === 2.0 ? 'strong' : aiTurn.effectiveness === 0.5 ? 'weak' : 'neutral',
+    chronicle_text: aiTurn.chronicle_text,
+  }
+  const turnRows = [playerTurnRow, aiTurnRow].filter(r => r.chronicle_text !== '')
 
   const { error: turnsError } = await supabase.from('battle_turns').insert(turnRows)
   if (turnsError) {
@@ -182,7 +185,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     battleUpdate.status = 'complete'
     battleUpdate.winner_id = winner === 'player' ? user.id : null
   }
-  await supabase.from('battles').update(battleUpdate).eq('id', id)
+  const { error: updateError } = await supabase.from('battles').update(battleUpdate).eq('id', id)
+  if (updateError) {
+    console.error('[battle/turn] Update battle failed:', updateError)
+    return NextResponse.json({ error: 'Failed to save battle state' }, { status: 500 })
+  }
 
   // End-of-battle chronicle
   let endChronicle: string | null = null
