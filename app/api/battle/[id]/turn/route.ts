@@ -123,7 +123,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     targetName: string,
   ): string {
     const faintedName = turn.fainted
-      ? (turn.actor === 'player' ? trainerCreatureData.name : playerCreatureData.name)
+      // trainerCreatureData and playerCreatureData are guaranteed non-null above (early-return guards)
+      ? (turn.actor === 'player' ? trainerCreatureData!.name : playerCreatureData!.name)
       : null
     const lines = buildChronicle(
       turn,
